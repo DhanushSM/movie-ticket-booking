@@ -8,14 +8,18 @@ public class WaitingTicket {
     private Theater theater;
     private Screen screen;
     private Seat seat;
+    private ShowTime showTime;
+    private double price;
     private Date bookingTime;
 
-    public WaitingTicket(User user, Movie movie, Theater theater, Screen screen, Seat seat, Date bookingTime) {
+    public WaitingTicket(User user, Movie movie, Theater theater, Screen screen, Seat seat, ShowTime showTime, double price, Date bookingTime) {
         this.user = user;
         this.movie = movie;
         this.theater = theater;
         this.screen = screen;
         this.seat = seat;
+        this.showTime = showTime;
+        this.price = price;
         this.bookingTime = bookingTime;
     }
 
@@ -39,6 +43,14 @@ public class WaitingTicket {
         return seat;
     }
 
+    public ShowTime getShowTime() {
+        return showTime;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
     public Date getBookingTime() {
         return bookingTime;
     }
@@ -51,6 +63,8 @@ public class WaitingTicket {
                 ", theater=" + theater +
                 ", screen=" + screen +
                 ", seat=" + seat +
+                ", showTime=" + showTime +
+                ", price=" + price +
                 ", bookingTime=" + bookingTime +
                 '}';
     }

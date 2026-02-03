@@ -4,10 +4,12 @@ public class Seat {
     private int row;
     private int col;
     private boolean isBooked;
+    private SeatCategory category;
 
-    public Seat(int row, int col) {
+    public Seat(int row, int col, SeatCategory category) {
         this.row = row;
         this.col = col;
+        this.category = category;
         this.isBooked = false;
     }
 
@@ -26,11 +28,20 @@ public class Seat {
     public void setBooked(boolean booked) {
         isBooked = booked;
     }
+
+    public SeatCategory getCategory() {
+        return category;
+    }
+
+    public double getPrice(double basePrice) {
+        return basePrice * category.getPriceMultiplier();
+    }
+
     public String display() {
         if (isBooked) {
-            return "[" + row + "," + col + " (B)]"; // Seat display string for booked seat
+            return "[" + row + "," + col + " " + category.getDisplayName().charAt(0) + " (B)]";
         } else {
-            return "[" + row + "," + col + "]"; // Seat display string for available seat
+            return "[" + row + "," + col + " " + category.getDisplayName().charAt(0) + "]";
         }
     }
 
@@ -40,6 +51,7 @@ public class Seat {
                 "row=" + row +
                 ", col=" + col +
                 ", isBooked=" + isBooked +
+                ", category=" + category +
                 '}';
     }
 }
