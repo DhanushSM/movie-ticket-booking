@@ -6,13 +6,17 @@ public class Ticket {
     private Theater theater;
     private Screen screen;
     private Seat seat;
+    private ShowTime showTime;
+    private double price;
 
-    public Ticket(User user, Movie movie, Theater theater, Screen screen, Seat seat) {
+    public Ticket(User user, Movie movie, Theater theater, Screen screen, Seat seat, ShowTime showTime, double price) {
         this.user = user;
         this.movie = movie;
         this.theater = theater;
         this.screen = screen;
         this.seat = seat;
+        this.showTime = showTime;
+        this.price = price;
     }
 
     public User getUser() {
@@ -35,6 +39,14 @@ public class Ticket {
         return seat;
     }
 
+    public ShowTime getShowTime() {
+        return showTime;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
     @Override
     public String toString() {
         return "Ticket{" +
@@ -43,6 +55,8 @@ public class Ticket {
                 ", theater=" + theater +
                 ", screen=" + screen +
                 ", seat=" + seat +
+                ", showTime=" + showTime +
+                ", price=" + price +
                 '}';
     }
 }

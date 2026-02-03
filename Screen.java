@@ -15,8 +15,9 @@ public class Screen {
         this.numCols = columns;
         seats = new Seat[rows][columns];
         for (int i = 0; i < rows; i++) {
+            SeatCategory category = resolveCategoryForRow(i, rows);
             for (int j = 0; j < columns; j++) {
-                seats[i][j] = new Seat(i + 1, j + 1); // Seat numbering starts from 1
+                seats[i][j] = new Seat(i + 1, j + 1, category); // Seat numbering starts from 1
             }
         }
     }
@@ -61,6 +62,19 @@ public class Screen {
             }
             System.out.println();
         }
+    }
+
+    private SeatCategory resolveCategoryForRow(int rowIndex, int totalRows) {
+        int rowNumber = rowIndex + 1;
+        int premiumStart = (int) Math.ceil(totalRows * 0.7);
+        int goldStart = (int) Math.ceil(totalRows * 0.4);
+        if (rowNumber >= premiumStart) {
+            return SeatCategory.PLATINUM;
+        }
+        if (rowNumber >= goldStart) {
+            return SeatCategory.GOLD;
+        }
+        return SeatCategory.SILVER;
     }
 
     @Override
