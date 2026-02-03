@@ -31,11 +31,11 @@ To set up the project locally, follow these steps:
     ```
 3. Compile the Java files:
     ```bash
-    javac -d bin src/*.java
+    javac -d bin src/movieBooking/*.java
     ```
 4. Run the application:
     ```bash
-    java -cp bin Main
+    java -cp bin movieBooking.Main
     ```
 
 ## Usage

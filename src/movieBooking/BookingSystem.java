@@ -6,6 +6,7 @@ public class BookingSystem {
     private List<Movie> movies;
     private List<Theater> theaters;
     private List<User> users;
+    private List<ShowTime> showTimes;
     private PriorityQueue<WaitingTicket> waitingList;
     private Stack<Ticket> cancellationStack;
     private Scanner scanner;
@@ -16,6 +17,7 @@ public class BookingSystem {
         movies = new ArrayList<>();
         theaters = new ArrayList<>();
         users = new ArrayList<>();
+        showTimes = new ArrayList<>();
         waitingList = new PriorityQueue<>(Comparator.comparing(WaitingTicket::getBookingTime));
         cancellationStack = new Stack<>();
         scanner = new Scanner(System.in);
@@ -111,10 +113,12 @@ public class BookingSystem {
             System.out.println("\nAdmin Menu:");
             System.out.println("1. Add Movie");
             System.out.println("2. Add Theater");
-            System.out.println("3. Process Cancellation Queue");
-            System.out.println("4. Show Waiting List");
-            System.out.println("5. Allocate Tickets from Waiting List");
-            System.out.println("6. Logout");
+            System.out.println("3. Add ShowTime");
+            System.out.println("4. List ShowTimes");
+            System.out.println("5. Process Cancellation Queue");
+            System.out.println("6. Show Waiting List");
+            System.out.println("7. Allocate Tickets from Waiting List");
+            System.out.println("8. Logout");
             System.out.print("Select an option: ");
             int choice = scanner.nextInt();
             scanner.nextLine(); // consume newline
@@ -127,15 +131,21 @@ public class BookingSystem {
                     addTheater();
                     break;
                 case 3:
-                    processCancellationQueue();
+                    addShowTime();
                     break;
                 case 4:
-                    showWaitingList();
+                    listShowTimes();
                     break;
                 case 5:
-                    allocateTicketsFromWaitingList();
+                    processCancellationQueue();
                     break;
                 case 6:
+                    showWaitingList();
+                    break;
+                case 7:
+                    allocateTicketsFromWaitingList();
+                    break;
+                case 8:
                     admin.logout();
                     System.out.println("Logged out successfully.");
                     break;
@@ -153,10 +163,11 @@ public class BookingSystem {
             System.out.println("3. View Recent Booking");
             System.out.println("4. View All Bookings");
             System.out.println("5. Search Movie");
-            System.out.println("6. Filter");
-            System.out.println("7. sortby Genere");
-            System.out.println("8. sortby location");
-            System.out.println("9. Logout");
+            System.out.println("6. Browse Shows by Location");
+            System.out.println("7. Filter");
+            System.out.println("8. sortby Genere");
+            System.out.println("9. sortby location");
+            System.out.println("10. Logout");
             System.out.print("Select an option: ");
             int choice = scanner.nextInt();
             scanner.nextLine(); // consume newline
@@ -178,16 +189,18 @@ public class BookingSystem {
                     searchMovie();
                     break;
                 case 6:
-                    searchMoviesByTitleGenreAndRating();
+                    browseShowsByLocation();
                     break;
                 case 7:
-                    sortMoviesByGenreDurationAndRating();
+                    searchMoviesByTitleGenreAndRating();
                     break;
                 case 8:
-                    sortTheatersByLocationScreensAndName();
-
+                    sortMoviesByGenreDurationAndRating();
                     break;
                 case 9:
+                    sortTheatersByLocationScreensAndName();
+                    break;
+                case 10:
                     currentUser = null;
                     System.out.println("Logged out successfully.");
                     break;
@@ -240,30 +253,30 @@ public class BookingSystem {
             return;
         }
 
-        Theater theater = selectTheater();
-        if (theater == null) {
+        ShowTime showTime = selectShowTime(movie);
+        if (showTime == null) {
             return;
         }
 
-        Screen screen = selectScreen(theater);
-        if (screen == null) {
+        Screen screen = showTime.getScreen();
+        List<Seat> selectedSeats = selectSeats(screen);
+        if (selectedSeats.isEmpty()) {
             return;
         }
 
-        Seat seat = selectSeat(screen);
-        if (seat == null) {
-            return;
-        }
-
-        if (!seat.isBooked()) {
-            Ticket ticket = new Ticket(currentUser, movie, theater, screen, seat);
-            currentUser.bookTicket(ticket);
-            seat.setBooked(true);
-            System.out.println("Booked ticket: " + ticket);
-        } else {
-            WaitingTicket waitingTicket = new WaitingTicket(currentUser, movie, theater, screen, seat, new Date());
-            waitingList.add(waitingTicket);
-            System.out.println("Seat is already booked. Added to waiting list: " + waitingTicket);
+        for (Seat seat : selectedSeats) {
+            if (!seat.isBooked()) {
+                double price = seat.getPrice(showTime.getBasePrice());
+                Ticket ticket = new Ticket(currentUser, movie, showTime.getTheater(), screen, seat, showTime, price);
+                currentUser.bookTicket(ticket);
+                seat.setBooked(true);
+                System.out.println("Booked ticket: " + ticket);
+            } else {
+                double price = seat.getPrice(showTime.getBasePrice());
+                WaitingTicket waitingTicket = new WaitingTicket(currentUser, movie, showTime.getTheater(), screen, seat, showTime, price, new Date());
+                waitingList.add(waitingTicket);
+                System.out.println("Seat is already booked. Added to waiting list: " + waitingTicket);
+            }
         }
     }
 
@@ -296,7 +309,13 @@ public class BookingSystem {
         if (currentUser != null) {
             List<Ticket> allBookings = currentUser.getAllBookings();
             if (!allBookings.isEmpty()) {
-                System.out.println("All bookings: " + allBookings);
+                double total = 0;
+                System.out.println("All bookings:");
+                for (Ticket ticket : allBookings) {
+                    System.out.println(ticket);
+                    total += ticket.getPrice();
+                }
+                System.out.println("Total spend: " + total);
             } else {
                 System.out.println("No bookings found.");
             }
@@ -331,7 +350,8 @@ public class BookingSystem {
             Seat seat = waitingTicket.getSeat();
             if (!seat.isBooked()) {
                 Ticket ticket = new Ticket(waitingTicket.getUser(), waitingTicket.getMovie(),
-                        waitingTicket.getTheater(), waitingTicket.getScreen(), seat);
+                        waitingTicket.getTheater(), waitingTicket.getScreen(), seat,
+                        waitingTicket.getShowTime(), waitingTicket.getPrice());
                 waitingTicket.getUser().bookTicket(ticket);
                 seat.setBooked(true);
                 System.out.println("Allocated ticket: " + ticket);
@@ -374,7 +394,7 @@ public class BookingSystem {
     }
 
     private Screen selectScreen(Theater theater) {
-        System.out.println("Available screens:"+ theater.getName() + ":");
+        System.out.println("Available screens:" + theater.getName() + ":");
         List<Screen> screens = theater.getScreens();
         for (int i = 0; i < screens.size(); i++) {
             System.out.println((i + 1) + ". " + screens.get(i));
@@ -389,30 +409,40 @@ public class BookingSystem {
             return null;
         }
     }
-    private Seat selectSeat(Screen screen) {
-        System.out.println("Select a seat:");
+
+    private List<Seat> selectSeats(Screen screen) {
+        System.out.println("Select seats (e.g., 1,1;1,2;1,3):");
         Seat[][] seats = screen.getSeats();
-        for (int i = 0; i < seats.length; i++) {
-            for (int j = 0; j < seats[i].length; j++) {
-                System.out.print("(" + (i + 1) + "," + (j + 1) + ") ");
-            }
-            System.out.println();
-        }
         System.out.println("Seat Layout:");
         screen.displaySeats();
+        System.out.println("Legend: Silver(S), Gold(G), Platinum(P)");
+        System.out.print("Enter seat coordinates: ");
+        String input = scanner.nextLine();
 
-        System.out.print("Enter row number: ");
-        int row = scanner.nextInt() - 1;
-        System.out.print("Enter column number: ");
-        int column = scanner.nextInt() - 1;
-        scanner.nextLine();
-
-        if (row < 0 || row >= seats.length || column < 0 || column >= seats[row].length) {
-            System.out.println("Invalid seat selection.");
-            return null;
+        List<Seat> selectedSeats = new ArrayList<>();
+        String[] selections = input.split(";");
+        for (String selection : selections) {
+            String trimmed = selection.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            String[] parts = trimmed.split(",");
+            if (parts.length != 2) {
+                System.out.println("Invalid seat format: " + trimmed);
+                continue;
+            }
+            int row = Integer.parseInt(parts[0].trim()) - 1;
+            int column = Integer.parseInt(parts[1].trim()) - 1;
+            if (row < 0 || row >= seats.length || column < 0 || column >= seats[row].length) {
+                System.out.println("Invalid seat selection: " + trimmed);
+                continue;
+            }
+            selectedSeats.add(seats[row][column]);
         }
-
-        return seats[row][column];
+        if (selectedSeats.isEmpty()) {
+            System.out.println("No valid seats selected.");
+        }
+        return selectedSeats;
     }
 
 
@@ -451,6 +481,95 @@ public class BookingSystem {
             for (Theater theater : foundTheaters) {
                 System.out.println(theater);
             }
+        }
+    }
+
+    private void addShowTime() {
+        if (movies.isEmpty() || theaters.isEmpty()) {
+            System.out.println("Please add movies and theaters before creating showtimes.");
+            return;
+        }
+
+        Movie movie = selectMovie();
+        if (movie == null) {
+            return;
+        }
+
+        Theater theater = selectTheater();
+        if (theater == null) {
+            return;
+        }
+
+        Screen screen = selectScreen(theater);
+        if (screen == null) {
+            return;
+        }
+
+        System.out.print("Enter showtime (e.g., 7:30 PM): ");
+        String time = scanner.nextLine();
+        System.out.print("Enter base ticket price: ");
+        double basePrice = scanner.nextDouble();
+        scanner.nextLine();
+
+        ShowTime showTime = new ShowTime(movie, theater, screen, time, basePrice);
+        showTimes.add(showTime);
+        System.out.println("ShowTime added: " + showTime);
+    }
+
+    private void listShowTimes() {
+        if (showTimes.isEmpty()) {
+            System.out.println("No showtimes available.");
+            return;
+        }
+        System.out.println("Available showtimes:");
+        for (ShowTime showTime : showTimes) {
+            System.out.println(showTime);
+        }
+    }
+
+    private ShowTime selectShowTime(Movie movie) {
+        List<ShowTime> matchingShows = new ArrayList<>();
+        for (ShowTime showTime : showTimes) {
+            if (showTime.getMovie().equals(movie)) {
+                matchingShows.add(showTime);
+            }
+        }
+
+        if (matchingShows.isEmpty()) {
+            System.out.println("No showtimes available for the selected movie.");
+            return null;
+        }
+
+        System.out.println("Available showtimes for " + movie.getTitle() + ":");
+        for (int i = 0; i < matchingShows.size(); i++) {
+            System.out.println((i + 1) + ". " + matchingShows.get(i));
+        }
+        System.out.print("Select a showtime: ");
+        int showIndex = scanner.nextInt() - 1;
+        scanner.nextLine();
+        if (showIndex >= 0 && showIndex < matchingShows.size()) {
+            return matchingShows.get(showIndex);
+        }
+        System.out.println("Invalid showtime selection.");
+        return null;
+    }
+
+    private void browseShowsByLocation() {
+        if (showTimes.isEmpty()) {
+            System.out.println("No showtimes available.");
+            return;
+        }
+        System.out.print("Enter location to browse: ");
+        String location = scanner.nextLine();
+        boolean found = false;
+        for (ShowTime showTime : showTimes) {
+            if (showTime.getTheater().getLocation().equalsIgnoreCase(location)) {
+                System.out.println(showTime);
+                found = true;
+            }
+        }
+        if (!found) {
+            System.out.println("No shows found in " + location + ".");
         }
     }
     public void sortMoviesByLanguageDurationAndRating() {
